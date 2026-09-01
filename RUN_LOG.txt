@@ -1,0 +1,105 @@
+DATA-266 HW1 RUN LOG
+SID4=6359
+SEED=6359
+HP_ID=5 (Schedule-long)
+
+This file summarizes the console outputs preserved in the completed assignment material.
+
+============================================================
+NEURAL NETWORK EXPERIMENTS
+============================================================
+
+PyTorch device: cpu
+
+PyTorch baseline:
+test acc per seed: [0.76315789 0.78070175 0.76315789]
+mean=0.7690
+std=0.0083
+
+PyTorch modified / HP_ID=5:
+test acc per seed: [0.78070175 0.78947368 0.75438596]
+mean=0.7749
+std=0.0149
+
+TensorFlow:
+2.20.0
+GPUs: []
+
+TensorFlow baseline:
+test acc per seed: [0.78070176 0.78947371 0.75438595]
+mean=0.7749
+std=0.0149
+
+TensorFlow modified / HP_ID=5:
+test acc per seed: [0.7719298  0.7631579  0.74561405]
+mean=0.7602
+std=0.0109
+
+============================================================
+CUDA ENVIRONMENT
+============================================================
+
+GPU:
+Tesla T4
+CUDA Version: 13.0
+Driver Version: 580.82.07
+
+Compilation:
+nvcc -O3 -Xcompiler -fopenmp matmul.cu -o matmul
+
+============================================================
+CUDA BENCHMARKS
+============================================================
+
+N=256
+CPU time (ms):           27.4259
+GPU kernel time (ms):    0.1509
+H2D+D2H transfer (ms):  1.0478
+GPU end-to-end (ms):     1.1988
+Speedup (CPU/GPU e2e):   22.8787x
+Max abs diff CPU vs GPU: 1.525879e-05
+
+N=1024
+CPU time (ms):           4910.4850
+GPU kernel time (ms):    9.1950
+H2D+D2H transfer (ms):  5.5728
+GPU end-to-end (ms):     14.7678
+Speedup (CPU/GPU e2e):   332.5121x
+Max abs diff CPU vs GPU: 9.155273e-05
+
+N=4096
+CPU time (ms):           693849.9563
+GPU kernel time (ms):    326.8400
+H2D+D2H transfer (ms):  82.1530
+GPU end-to-end (ms):     408.9930
+Speedup (CPU/GPU e2e):   1696.4839x
+Max abs diff CPU vs GPU: 3.662109e-04
+
+============================================================
+PROFILING
+============================================================
+
+Nsight Systems:
+nsys command was not available in the Colab environment.
+
+Nsight Compute:
+ncu was available at /usr/local/cuda/bin/ncu.
+
+Profiler report:
+ncu_report_1024.ncu-rep
+
+The profiler-instrumented N=1024 run reported:
+CPU time (ms):           5626.2680
+GPU kernel time (ms):    1758.7977
+H2D+D2H transfer (ms):   5.8060
+GPU end-to-end (ms):     1764.6037
+Speedup (CPU/GPU e2e):   3.1884x
+
+IMPORTANT:
+The profiler adds substantial instrumentation overhead. Therefore the normal,
+unprofiled CUDA benchmark numbers above are the values used in METRICS.md.
+The ncu values are retained for profiler-derived analysis only.
+
+============================================================
+END OF LOG
+============================================================
