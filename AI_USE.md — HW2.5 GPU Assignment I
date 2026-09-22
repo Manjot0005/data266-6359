@@ -1,0 +1,43 @@
+AI_USE.md — HW2.5 GPU Assignment I
+
+AI Usage Disclosure
+
+I used AI assistance only in a limited support and debugging capacity while working on this assignment.
+
+AI was not used to perform the experiments, generate or fabricate benchmark results, or replace my own implementation and analysis. The GPU measurements, execution of the benchmarks, logs, plots, and reported results were produced from my own work and runs.
+
+How I used AI
+
+I used AI mainly for:
+
+Helping me understand how to get started with the assignment and organize the required parts.
+
+Debugging errors encountered while developing or running the code.
+
+Clarifying Python/PyTorch/CUDA errors and suggesting possible debugging directions.
+
+Helping curate the workflow and identify what needed to be checked or documented for the assignment requirements.
+
+What I did myself
+
+I personally:
+
+Ran the experiments on the assigned GPU environment.
+
+Collected the nvidia-smi -q information and GPU provenance.
+
+Executed the matrix multiplication benchmarks.
+
+Collected the bandwidth and arithmetic-intensity measurements.
+
+Implemented and ran the naive and fused attention experiments.
+
+Performed the sequence-length and OOM testing.
+
+Collected the thermal/sustained-load measurements.
+
+Generated and reviewed the figures and output files.
+
+Interpreted the experimental results and prepared the assignment deliverables.
+
+AI assistance was therefore used as a debugging and organizational aid, not as a substitute for the experimental work or the reported results.
