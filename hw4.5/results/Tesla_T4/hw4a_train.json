@@ -1,0 +1,198 @@
+{
+  "cfg": {
+    "csv": "",
+    "text_col": "text",
+    "label_col": "label",
+    "csv_header": true,
+    "encoding": "latin-1",
+    "slice": 0,
+    "n_rows": 5000,
+    "seed": 42,
+    "max_len": 128,
+    "model": "bert-base-uncased",
+    "epochs": 4,
+    "batch_size": 32,
+    "lr": 2e-05,
+    "weight_decay": 0.01,
+    "warmup_frac": 0.1,
+    "amp": "none",
+    "grad_ckpt": false,
+    "accum": 1,
+    "optim": "adamw",
+    "max_opt_steps": 0,
+    "tag": "baseline",
+    "out": "results",
+    "save_model": "bert_twitter_hw4"
+  },
+  "gpu": "Tesla T4",
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.9638466807092939,
+      "epoch_time_s": 71.44899196000006,
+      "samples_per_s": 48.98599551914514,
+      "val_loss": 0.8772535072962443,
+      "val_acc": 0.5666666666666667
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.6694025137424469,
+      "epoch_time_s": 72.24366877200009,
+      "samples_per_s": 48.44715197183501,
+      "val_loss": 0.7726437460581461,
+      "val_acc": 0.6386666666666667
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.4624570825440543,
+      "epoch_time_s": 72.47252115299989,
+      "samples_per_s": 48.294166455324465,
+      "val_loss": 0.7739390757878621,
+      "val_acc": 0.6693333333333333
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.3338011998108455,
+      "epoch_time_s": 72.79645121000021,
+      "samples_per_s": 48.079266802489364,
+      "val_loss": 0.8115190569559733,
+      "val_acc": 0.6786666666666666
+    }
+  ],
+  "peak_mem_alloc_gb": 4.010186752,
+  "peak_mem_reserved_gb": 4.601151488,
+  "train_time_s": 288.96163309500025,
+  "samples_per_s": 48.44933858536611,
+  "opt_steps": 440,
+  "effective_batch": 32,
+  "best_val_epoch": 2,
+  "val_stopped_improving_after_epoch": 2,
+  "epochs_past_best": 2,
+  "extra_time_past_best_s": 145.2689723630001,
+  "test_acc": 0.6813333333333333,
+  "test_loss": 0.7913219889005025,
+  "row_range": {
+    "first_row": 0,
+    "last_row": 4999,
+    "n_rows": 5000,
+    "n_after_dropna": 5000,
+    "dataset_rows": 45615,
+    "label_counts": {
+      "0": 769,
+      "1": 2294,
+      "2": 1937
+    },
+    "split_sizes": {
+      "train": 3500,
+      "val": 750,
+      "test": 750
+    }
+  },
+  "wall_clock_incl_eval_s": 321.2901821209998,
+  "class_report": {
+    "confusion_matrix": [
+      [
+        61,
+        36,
+        8
+      ],
+      [
+        33,
+        225,
+        78
+      ],
+      [
+        11,
+        73,
+        225
+      ]
+    ],
+    "labels": [
+      "0",
+      "1",
+      "2"
+    ],
+    "per_class": {
+      "0": {
+        "precision": 0.580952380952381,
+        "recall": 0.580952380952381,
+        "f1": 0.580952380952381,
+        "support": 105
+      },
+      "1": {
+        "precision": 0.6736526946107785,
+        "recall": 0.6696428571428571,
+        "f1": 0.6716417910447762,
+        "support": 336
+      },
+      "2": {
+        "precision": 0.7234726688102894,
+        "recall": 0.7281553398058253,
+        "f1": 0.7258064516129032,
+        "support": 309
+      }
+    },
+    "worst_class": "0"
+  },
+  "worst_class_misclassified": [
+    {
+      "text": "\"I may be Asian, but it doesn't mean I automatically like T-ara. I'm not even familiar with KPOP. #DirectionersFuneral\"",
+      "gold": "0",
+      "pred": "1",
+      "diagnosis": "Annoyance expressed only through negation ('doesn't mean', 'not even'); no overtly negative words."
+    },
+    {
+      "text": "when you hungry af but Dunkin is closed on Sunday's &amp; conn don't open until 10",
+      "gold": "0",
+      "pred": "1",
+      "diagnosis": "Frustration in slang and a run-on factual complaint; model reads it as a statement about opening hours."
+    },
+    {
+      "text": "\"Well Jokes apart, today or tomorrow Yakub has to meet with with 72 Hoors. S\"",
+      "gold": "0",
+      "pred": "1",
+      "diagnosis": "Dark humour about an execution; negativity requires world knowledge the model lacks."
+    },
+    {
+      "text": "HOF president: Frank Gifford 'built the game': The passing of Frank Gifford cast a cloud over Sunday's proceed...",
+      "gold": "0",
+      "pred": "1",
+      "diagnosis": "Neutral-toned news headline about a death; label reflects the event, not the tone (arguable label noise)."
+    },
+    {
+      "text": "Kanye West to run for US president No guys c'mon. POTUS is the most powerful man in the world. Get serious. Tho he'd be bettern tham Trump",
+      "gold": "0",
+      "pred": "2",
+      "diagnosis": "Mixed sentiment; the closing comparative 'better than Trump' outweighs the earlier dismissive tone."
+    }
+  ],
+  "custom_inference": [
+    {
+      "text": "I absolutely love this new phone!",
+      "pred": "2",
+      "probs": [
+        0.007,
+        0.012,
+        0.981
+      ]
+    },
+    {
+      "text": "Worst customer service ever, never again.",
+      "pred": "0",
+      "probs": [
+        0.891,
+        0.075,
+        0.034
+      ]
+    },
+    {
+      "text": "The flight leaves at 6pm tomorrow.",
+      "pred": "1",
+      "probs": [
+        0.03,
+        0.922,
+        0.048
+      ]
+    }
+  ]
+}

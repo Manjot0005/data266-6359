@@ -1,0 +1,41 @@
+{
+  "vLLM, batch 1": {
+    "tokens_per_s": 171.85745295755376,
+    "p50_ms": 744.1002000000481,
+    "p95_ms": 749.4553892001704,
+    "mean_ms": 744.6598928999492,
+    "requests": 20,
+    "gen_tokens": 2560,
+    "wall_s": 14.896066222000172
+  },
+  "vLLM, batch 8": {
+    "tokens_per_s": 1231.1862503478349,
+    "p50_ms": 831.4807575000032,
+    "p95_ms": 836.9214225499036,
+    "mean_ms": 831.2925016500003,
+    "requests": 160,
+    "gen_tokens": 20480,
+    "wall_s": 16.63436380500025
+  },
+  "vLLM, batch 32": {
+    "tokens_per_s": 3364.860025832041,
+    "p50_ms": 1216.3722929999494,
+    "p95_ms": 1224.238210999965,
+    "mean_ms": 1215.9945855500155,
+    "requests": 640,
+    "gen_tokens": 81920,
+    "wall_s": 24.345737823000036
+  },
+  "_meta": {
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "dtype": "half",
+    "gpu": "Tesla_T4",
+    "new_tokens": 128,
+    "gpu_memory_utilization": 0.9,
+    "kv_cache": {
+      "num_gpu_blocks": 64765,
+      "block_size": 16,
+      "kv_tokens": 1036240
+    }
+  }
+}

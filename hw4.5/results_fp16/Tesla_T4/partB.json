@@ -1,0 +1,149 @@
+{
+  "gpu": "Tesla T4",
+  "row_range": {
+    "first_row": 0,
+    "last_row": 4999,
+    "n_rows": 5000,
+    "n_after_dropna": 5000,
+    "dataset_rows": 45615,
+    "label_counts": {
+      "0": 769,
+      "1": 2294,
+      "2": 1937
+    },
+    "split_sizes": {
+      "train": 3500,
+      "val": 750,
+      "test": 750
+    }
+  },
+  "results": {
+    "amp": {
+      "technique": "Mixed precision (fp16)",
+      "cfg": {
+        "csv": "",
+        "text_col": "text",
+        "label_col": "label",
+        "csv_header": true,
+        "encoding": "latin-1",
+        "slice": 0,
+        "n_rows": 5000,
+        "seed": 42,
+        "max_len": 128,
+        "model": "bert-base-uncased",
+        "epochs": 4,
+        "batch_size": 32,
+        "lr": 2e-05,
+        "weight_decay": 0.01,
+        "warmup_frac": 0.1,
+        "amp": "fp16",
+        "grad_ckpt": false,
+        "accum": 1,
+        "optim": "adamw",
+        "max_opt_steps": 0,
+        "tag": "amp",
+        "out": "results_fp16",
+        "save_model": ""
+      },
+      "probe": [
+        {
+          "batch_size": 8,
+          "ok": true,
+          "samples_per_s": 88.21961304893578,
+          "peak_mem_alloc_gb": 2.244570624,
+          "peak_mem_reserved_gb": 2.45366784,
+          "est_epoch_time_s": 39.673717431276145
+        },
+        {
+          "batch_size": 16,
+          "ok": true,
+          "samples_per_s": 125.56121182576607,
+          "peak_mem_alloc_gb": 2.405439488,
+          "peak_mem_reserved_gb": 2.617245696,
+          "est_epoch_time_s": 27.874850434358223
+        },
+        {
+          "batch_size": 32,
+          "ok": true,
+          "samples_per_s": 161.73665346251917,
+          "peak_mem_alloc_gb": 3.238611456,
+          "peak_mem_reserved_gb": 3.426746368,
+          "est_epoch_time_s": 21.640116356253714
+        },
+        {
+          "batch_size": 64,
+          "ok": true,
+          "samples_per_s": 186.4303346719438,
+          "peak_mem_alloc_gb": 4.90070272,
+          "peak_mem_reserved_gb": 4.993318912,
+          "est_epoch_time_s": 18.773768797652224
+        },
+        {
+          "batch_size": 128,
+          "ok": true,
+          "samples_per_s": 201.31964511493678,
+          "peak_mem_alloc_gb": 8.238779392,
+          "peak_mem_reserved_gb": 8.428453888,
+          "est_epoch_time_s": 17.38528794843539
+        },
+        {
+          "batch_size": 256,
+          "ok": true,
+          "samples_per_s": 198.74156291167057,
+          "peak_mem_alloc_gb": 14.937083904,
+          "peak_mem_reserved_gb": 15.210643456,
+          "est_epoch_time_s": 17.610810485351536
+        },
+        {
+          "batch_size": 512,
+          "ok": false,
+          "error": "OOM"
+        }
+      ],
+      "max_batch": 256,
+      "ref_batch": 32,
+      "samples_per_s": 154.11377639519887,
+      "peak_mem_alloc_gb": 3.238611456,
+      "peak_mem_reserved_gb": 3.426746368,
+      "test_acc": 0.6733333333333333,
+      "train_time_s": 88.82463355499931,
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 0.9795334820747376,
+          "epoch_time_s": 22.217193210000005,
+          "samples_per_s": 157.53565119218763,
+          "val_loss": 0.9052045931816101,
+          "val_acc": 0.5453333333333333
+        },
+        {
+          "epoch": 2,
+          "train_loss": 0.6778247854709625,
+          "epoch_time_s": 22.053036413999507,
+          "samples_per_s": 158.7083036682496,
+          "val_loss": 0.7859163403511047,
+          "val_acc": 0.6373333333333333
+        },
+        {
+          "epoch": 3,
+          "train_loss": 0.4690597098554884,
+          "epoch_time_s": 22.25763632000053,
+          "samples_per_s": 157.24940194367937,
+          "val_loss": 0.7833169794082642,
+          "val_acc": 0.6666666666666666
+        },
+        {
+          "epoch": 4,
+          "train_loss": 0.3390280891827175,
+          "epoch_time_s": 22.296767610999268,
+          "samples_per_s": 156.97342597199636,
+          "val_loss": 0.8222444899876913,
+          "val_acc": 0.6706666666666666
+        }
+      ],
+      "full_run_samples_per_s": 157.61393478005562,
+      "full_run_peak_mem_gb": 3.238611456,
+      "opt_steps": 440
+    }
+  }
+}

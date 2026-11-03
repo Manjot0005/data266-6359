@@ -1,0 +1,55 @@
+{
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "gpu": "Tesla_T4",
+  "batch": 8,
+  "bytes_per_token_analytic": 12288,
+  "max_position_embeddings": 32768,
+  "total_vram_gb": 15.636037632,
+  "hf_measured": [
+    {
+      "context": 256,
+      "kv_gb_measured": 0.025165824,
+      "kv_gb_analytic": 0.025165824,
+      "peak_delta_gb": 0.147307008,
+      "ok": true
+    },
+    {
+      "context": 512,
+      "kv_gb_measured": 0.050331648,
+      "kv_gb_analytic": 0.050331648,
+      "peak_delta_gb": 0.408121856,
+      "ok": true
+    },
+    {
+      "context": 1024,
+      "kv_gb_measured": 0.100663296,
+      "kv_gb_analytic": 0.100663296,
+      "peak_delta_gb": 1.347346944,
+      "ok": true
+    },
+    {
+      "context": 2048,
+      "kv_gb_measured": 0.201326592,
+      "kv_gb_analytic": 0.201326592,
+      "peak_delta_gb": 4.815962624,
+      "ok": true
+    },
+    {
+      "context": 4096,
+      "ok": false,
+      "error": "OOM"
+    }
+  ],
+  "vllm_kv": {
+    "num_gpu_blocks": 64717,
+    "block_size": 16,
+    "kv_tokens": 1035472,
+    "kv_gb": 12.723879936
+  },
+  "vllm_longest_context_batch8": 32768,
+  "vllm_verify_batch8": {
+    "context": 32768,
+    "completed": 8,
+    "wall_s": 573.4521600030002
+  }
+}

@@ -1,0 +1,480 @@
+HW4.5 RUN_LOG
+Kaggle notebook 'gpu hw 2' | Accelerator: GPU T4 x2 | Session: 2026-11-02 ~21:30 to 23:55 PT (2026-11-03 UTC)
+SLICE=0  SEED=42  Dataset: cardiffnlp/tweet_eval (sentiment)  Model: bert-base-uncased / Qwen/Qwen2.5-0.5B-Instruct
+Notes: the transformers head-weight LOAD REPORT (UNEXPECTED/MISSING classifier/pretraining-head keys, printed once per model load),
+download progress bars and the long vLLM engine-config dump were removed for readability. All commands and result lines are verbatim.
+==========================================================================================================
+
+!cp -r /kaggle/input/datasets/manjotkaur05/hw45data/hw45 /kaggle/working/
+%cd /kaggle/working/hw45
+!ls
+!pip install -q -U transformers datasets scikit-learn bitsandbytes vllm
+/kaggle/working/hw45
+common.py		partB_memory_techniques.py  report.py
+hw4a_train.py		partC_ddp.py		    run_all.sh
+partA_batch_scaling.py	README.md		    serve_bench.py
+%cd /kaggle/working/hw45
+import torch, transformers
+print(torch.__version__, torch.cuda.is_available(), torch.cuda.device_count())
+print(transformers.__version__)
+/kaggle/working/hw45
+2.11.0+cu130 True 2
+5.22.1
+import os
+os.environ["SLICE"] = "0"     # <-- your assigned SLICE
+os.environ["SEED"]  = "42"    # <-- your assigned SEED
+os.environ["DTYPE"] = "half"  # T4 has no bf16
+!sed -i 's|load_dataset("tweet_eval", "sentiment"|load_dataset("cardiffnlp/tweet_eval", "sentiment"|' common.py
+!grep -n "tweet_eval" common.py
+18:    csv: str = ""                 # path to Twitter CSV; empty -> HF tweet_eval/sentiment
+88:        df = load_dataset("cardiffnlp/tweet_eval", "sentiment", split="train").to_pandas()
+!python hw4a_train.py --slice $SLICE --seed $SEED
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Row range used: {'first_row': 0, 'last_row': 4999, 'n_rows': 5000, 'n_after_dropna': 5000, 'dataset_rows': 45615, 'label_counts': {'0': 769, '1': 2294, '2': 1937}, 'split_sizes': {'train': 3500, 'val': 750, 'test': 750}}
+
+{'epoch': 1, 'train_loss': 0.9638, 'epoch_time_s': 71.449, 'samples_per_s': 48.986, 'val_loss': 0.8773, 'val_acc': 0.5667}
+{'epoch': 2, 'train_loss': 0.6694, 'epoch_time_s': 72.2437, 'samples_per_s': 48.4472, 'val_loss': 0.7726, 'val_acc': 0.6387}
+{'epoch': 3, 'train_loss': 0.4625, 'epoch_time_s': 72.4725, 'samples_per_s': 48.2942, 'val_loss': 0.7739, 'val_acc': 0.6693}
+{'epoch': 4, 'train_loss': 0.3338, 'epoch_time_s': 72.7965, 'samples_per_s': 48.0793, 'val_loss': 0.8115, 'val_acc': 0.6787}
+Writing model shards: 100%|███████████████████████| 1/1 [00:00<00:00,  1.37it/s]
+[saved] results/Tesla_T4/hw4a_train.json
+
+Rows 0..4999 (5000) | best val epoch 2 | test acc 0.6813 | peak mem 4.01 GB | train time 289.0s
+Worst class: 0 -> fill in the 5 diagnoses in the JSON / report.
+!python serve_bench.py --mode hf --model Qwen/Qwen2.5-0.5B-Instruct --dtype $DTYPE
+
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+config.json: 100%|█████████████████████████████| 659/659 [00:00<00:00, 3.37MB/s]
+tokenizer_config.json: 100%|███████████████| 7.30k/7.30k [00:00<00:00, 15.9MB/s]
+vocab.json: 100%|██████████████████████████| 2.78M/2.78M [00:00<00:00, 42.8MB/s]
+merges.txt: 100%|███████████████████████████| 1.67M/1.67M [00:00<00:00, 132MB/s]
+tokenizer.json: 100%|███████████████████████| 7.03M/7.03M [00:00<00:00, 153MB/s]
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+generation_config.json: 100%|██████████████████| 242/242 [00:00<00:00, 1.02MB/s]
+[transformers] You seem to be using the pipelines sequentially on GPU. In order to maximize efficiency please use a dataset
+{
+  "HF pipeline, batch 1": {
+    "tokens_per_s": 30.66377661073605,
+    "p50_ms": 4172.274518499762,
+    "p95_ms": 4251.183006300107,
+    "mean_ms": 4173.586062150071,
+    "requests": 20,
+    "gen_tokens": 2560,
+    "wall_s": 83.48612868199962
+  },
+  "_meta": {
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "dtype": "torch.float16",
+    "gpu": "Tesla_T4",
+    "new_tokens": 128
+  }
+}
+[saved] results/Tesla_T4/serve_hf.json
+!python serve_bench.py --mode vllm --model Qwen/Qwen2.5-0.5B-Instruct --dtype $DTYPE
+INFO 11-03 06:10:48 [api_utils.py:273] non-default args: {'dtype': 'half', 'max_model_len': 2048, 'gpu_memory_utilization': 0.9, 'disable_log_stats': True, 'model': 'Qwen/Qwen2.5-0.5B-Instruct'}
+INFO 11-03 06:10:49 [model.py:623] Resolved architecture: Qwen2ForCausalLM
+WARNING 11-03 06:10:49 [model.py:2123] Casting torch.bfloat16 to torch.float16.
+INFO 11-03 06:10:49 [model.py:1788] Using max model len 2048
+INFO 11-03 06:10:49 [scheduler.py:252] Chunked prefill is enabled with max_num_batched_tokens=8192.
+INFO 11-03 06:10:49 [vllm.py:1109] Asynchronous scheduling is enabled.
+INFO 11-03 06:10:49 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=1076) INFO 11-03 06:10:55 [parallel_state.py:1615] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.19.2.2:40651 backend=nccl
+(EngineCore pid=1076) INFO 11-03 06:10:55 [parallel_state.py:1946] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=1076) INFO 11-03 06:10:55 [gpu_worker.py:378] Using V2 Model Runner
+(EngineCore pid=1076) INFO 11-03 06:10:57 [model_runner.py:284] Loading model from scratch...
+(EngineCore pid=1076) ERROR 11-03 06:10:57 [fa_utils.py:253] Cannot use FA version 2 is not supported due to FA2 is only supported on devices with compute capability >= 8
+(EngineCore pid=1076) INFO 11-03 06:10:59 [cuda.py:482] Using TRITON_ATTN attention backend out of potential backends: ['TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=1076) Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+(EngineCore pid=1076) INFO 11-03 06:11:00 [weight_utils.py:574] No model.safetensors.index.json found in remote.
+(EngineCore pid=1076) INFO 11-03 06:11:00 [weight_utils.py:869] Filesystem type for checkpoints: OVERLAY. Checkpoint size: 0.92 GiB. Available RAM: 27.46 GiB.
+(EngineCore pid=1076) INFO 11-03 06:11:00 [weight_utils.py:892] Auto-prefetch is disabled because the filesystem (OVERLAY) is not a recognized network FS (NFS/Lustre). If you want to force prefetching, start vLLM with --safetensors-load-strategy=prefetch.
+(EngineCore pid=1076) 
+(EngineCore pid=1076) INFO 11-03 06:11:01 [model_runner.py:305] Model loading took 0.93 GiB and 4.787532 seconds
+(EngineCore pid=1076) WARNING 11-03 06:11:01 [topk_topp_sampler.py:62] FlashInfer top-p/top-k sampling unavailable: unsupported compute capability 7.5; falling back. Set VLLM_USE_FLASHINFER_SAMPLER=0 to silence.
+(EngineCore pid=1076) INFO 11-03 06:11:05 [backends.py:1094] Using cache directory: /root/.cache/vllm/torch_compile_cache/720c86c483/rank_0_0/backbone for vLLM's torch.compile
+(EngineCore pid=1076) INFO 11-03 06:11:05 [backends.py:1155] Dynamo bytecode transform time: 3.27 s
+(EngineCore pid=1076) INFO 11-03 06:11:06 [backends.py:292] Directly load the compiled graph(s) for compile range (1, 8192) from the cache, took 0.963 s
+(EngineCore pid=1076) INFO 11-03 06:11:06 [decorators.py:311] Directly load AOT compilation from path /root/.cache/vllm/torch_compile_cache/torch_aot_compile/2f88759cfbc2ea9faa7b0009b8675040aeb789a4ef22853a1b0d4d4745b6d319/rank_0_0/model
+(EngineCore pid=1076) INFO 11-03 06:11:06 [monitor.py:53] torch.compile took 4.47 s in total
+(EngineCore pid=1076) INFO 11-03 06:11:06 [monitor.py:81] Initial profiling/warmup run took 0.11 s
+(EngineCore pid=1076) INFO 11-03 06:11:08 [gpu_worker.py:560] Available KV cache memory: 11.86 GiB
+(EngineCore pid=1076) INFO 11-03 06:11:08 [kv_cache_utils.py:2177] GPU KV cache size: 1,036,240 tokens
+(EngineCore pid=1076) INFO 11-03 06:11:08 [kv_cache_utils.py:2178] Maximum concurrency for 2,048 tokens per request: 505.98x
+(EngineCore pid=1076) INFO 11-03 06:11:08 [cutedsl_warmup.py:101] Skipping CuTeDSL warmup because no compile units were requested.
+(EngineCore pid=1076) INFO 11-03 06:11:12 [model_runner.py:747] Graph capturing finished in 4 secs, took 0.34 GiB
+(EngineCore pid=1076) INFO 11-03 06:11:12 [gpu_worker.py:857] Free memory on device (14.46/14.56 GiB) on startup. Desired GPU memory utilization is (0.9, 13.11 GiB). Actual usage is 0.93 GiB for weight, 0.27 GiB for peak activation, 0.05 GiB for non-torch memory, and 0.34 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=12206932173` (11.37 GiB) to fit into requested memory, or `--kv-cache-memory=13660566528` (12.72 GiB) to fully utilize gpu memory. Current kv cache memory in use is 11.86 GiB.
+(EngineCore pid=1076) INFO 11-03 06:11:13 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+(EngineCore pid=1076) INFO 11-03 06:11:14 [core.py:340] init engine (profile, create kv cache, warmup model) took 12.76 s (compilation: 4.47 s)
+(EngineCore pid=1076) INFO 11-03 06:11:14 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=1076) WARNING 11-03 06:11:14 [jit_monitor.py:135] Triton kernel JIT compilation during inference: kernel_unified_attention. This causes a latency spike; consider extending warmup to cover this shape/config.
+1 {'tokens_per_s': 171.85745295755376, 'p50_ms': 744.1002000000481, 'p95_ms': 749.4553892001704, 'mean_ms': 744.6598928999492, 'requests': 20, 'gen_tokens': 2560, 'wall_s': 14.896066222000172}
+8 {'tokens_per_s': 1231.1862503478349, 'p50_ms': 831.4807575000032, 'p95_ms': 836.9214225499036, 'mean_ms': 831.2925016500003, 'requests': 160, 'gen_tokens': 20480, 'wall_s': 16.63436380500025}
+32 {'tokens_per_s': 3364.860025832041, 'p50_ms': 1216.3722929999494, 'p95_ms': 1224.238210999965, 'mean_ms': 1215.9945855500155, 'requests': 640, 'gen_tokens': 81920, 'wall_s': 24.345737823000036}
+[saved] results/Tesla_T4/serve_vllm.json
+(EngineCore pid=1076) INFO 11-03 06:12:16 [core.py:1313] [shutdown] EngineCore: trigger received signal=SIGTERM
+(EngineCore pid=1076) INFO 11-03 06:12:16 [core.py:1432] [shutdown] EngineCore: start mode=abort timeout=0s
+(EngineCore pid=1076) INFO 11-03 06:12:16 [core.py:1463] [shutdown] EngineCore: request processing complete; starting resource teardown
+(EngineCore pid=1076) INFO 11-03 06:12:16 [core.py:1326] [shutdown] EngineCore: exiting busy loop
+!python serve_bench.py --mode vllm --model Qwen/Qwen2.5-0.5B-Instruct --dtype $DTYPE --batches 64 128 256 --iters 5 --out results_extra
+INFO 11-03 06:13:19 [api_utils.py:273] non-default args: {'dtype': 'half', 'max_model_len': 2048, 'gpu_memory_utilization': 0.9, 'disable_log_stats': True, 'model': 'Qwen/Qwen2.5-0.5B-Instruct'}
+INFO 11-03 06:13:20 [model.py:623] Resolved architecture: Qwen2ForCausalLM
+WARNING 11-03 06:13:20 [model.py:2123] Casting torch.bfloat16 to torch.float16.
+INFO 11-03 06:13:20 [model.py:1788] Using max model len 2048
+INFO 11-03 06:13:20 [scheduler.py:252] Chunked prefill is enabled with max_num_batched_tokens=8192.
+INFO 11-03 06:13:20 [vllm.py:1109] Asynchronous scheduling is enabled.
+INFO 11-03 06:13:20 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=1200) INFO 11-03 06:13:26 [parallel_state.py:1615] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.19.2.2:53617 backend=nccl
+(EngineCore pid=1200) INFO 11-03 06:13:26 [parallel_state.py:1946] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=1200) INFO 11-03 06:13:26 [gpu_worker.py:378] Using V2 Model Runner
+(EngineCore pid=1200) INFO 11-03 06:13:28 [model_runner.py:284] Loading model from scratch...
+(EngineCore pid=1200) ERROR 11-03 06:13:28 [fa_utils.py:253] Cannot use FA version 2 is not supported due to FA2 is only supported on devices with compute capability >= 8
+(EngineCore pid=1200) INFO 11-03 06:13:30 [cuda.py:482] Using TRITON_ATTN attention backend out of potential backends: ['TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=1200) Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+(EngineCore pid=1200) INFO 11-03 06:13:30 [weight_utils.py:574] No model.safetensors.index.json found in remote.
+(EngineCore pid=1200) INFO 11-03 06:13:30 [weight_utils.py:869] Filesystem type for checkpoints: OVERLAY. Checkpoint size: 0.92 GiB. Available RAM: 27.67 GiB.
+(EngineCore pid=1200) INFO 11-03 06:13:30 [weight_utils.py:892] Auto-prefetch is disabled because the filesystem (OVERLAY) is not a recognized network FS (NFS/Lustre). If you want to force prefetching, start vLLM with --safetensors-load-strategy=prefetch.
+(EngineCore pid=1200) 
+(EngineCore pid=1200) INFO 11-03 06:13:32 [model_runner.py:305] Model loading took 0.93 GiB and 4.784241 seconds
+(EngineCore pid=1200) WARNING 11-03 06:13:32 [topk_topp_sampler.py:62] FlashInfer top-p/top-k sampling unavailable: unsupported compute capability 7.5; falling back. Set VLLM_USE_FLASHINFER_SAMPLER=0 to silence.
+(EngineCore pid=1200) INFO 11-03 06:13:36 [backends.py:1094] Using cache directory: /root/.cache/vllm/torch_compile_cache/720c86c483/rank_0_0/backbone for vLLM's torch.compile
+(EngineCore pid=1200) INFO 11-03 06:13:36 [backends.py:1155] Dynamo bytecode transform time: 3.15 s
+(EngineCore pid=1200) INFO 11-03 06:13:37 [backends.py:292] Directly load the compiled graph(s) for compile range (1, 8192) from the cache, took 0.939 s
+(EngineCore pid=1200) INFO 11-03 06:13:37 [decorators.py:311] Directly load AOT compilation from path /root/.cache/vllm/torch_compile_cache/torch_aot_compile/2f88759cfbc2ea9faa7b0009b8675040aeb789a4ef22853a1b0d4d4745b6d319/rank_0_0/model
+(EngineCore pid=1200) INFO 11-03 06:13:37 [monitor.py:53] torch.compile took 4.34 s in total
+(EngineCore pid=1200) INFO 11-03 06:13:37 [monitor.py:81] Initial profiling/warmup run took 0.10 s
+(EngineCore pid=1200) INFO 11-03 06:13:38 [gpu_worker.py:560] Available KV cache memory: 11.86 GiB
+(EngineCore pid=1200) INFO 11-03 06:13:38 [kv_cache_utils.py:2177] GPU KV cache size: 1,036,240 tokens
+(EngineCore pid=1200) INFO 11-03 06:13:38 [kv_cache_utils.py:2178] Maximum concurrency for 2,048 tokens per request: 505.98x
+(EngineCore pid=1200) INFO 11-03 06:13:39 [cutedsl_warmup.py:101] Skipping CuTeDSL warmup because no compile units were requested.
+(EngineCore pid=1200) INFO 11-03 06:13:43 [model_runner.py:747] Graph capturing finished in 4 secs, took 0.34 GiB
+(EngineCore pid=1200) INFO 11-03 06:13:43 [gpu_worker.py:857] Free memory on device (14.46/14.56 GiB) on startup. Desired GPU memory utilization is (0.9, 13.11 GiB). Actual usage is 0.93 GiB for weight, 0.27 GiB for peak activation, 0.05 GiB for non-torch memory, and 0.34 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=12206932173` (11.37 GiB) to fit into requested memory, or `--kv-cache-memory=13660566528` (12.72 GiB) to fully utilize gpu memory. Current kv cache memory in use is 11.86 GiB.
+(EngineCore pid=1200) INFO 11-03 06:13:44 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+(EngineCore pid=1200) INFO 11-03 06:13:45 [core.py:340] init engine (profile, create kv cache, warmup model) took 12.61 s (compilation: 4.34 s)
+(EngineCore pid=1200) INFO 11-03 06:13:45 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=1200) WARNING 11-03 06:13:45 [jit_monitor.py:135] Triton kernel JIT compilation during inference: kernel_unified_attention. This causes a latency spike; consider extending warmup to cover this shape/config.
+64 {'tokens_per_s': 5229.007790708831, 'p50_ms': 1560.9917049996511, 'p95_ms': 1578.1919310002195, 'mean_ms': 1564.1654844000186, 'requests': 320, 'gen_tokens': 40960, 'wall_s': 7.833226041999751}
+128 {'tokens_per_s': 7973.557596181397, 'p50_ms': 2046.875774, 'p95_ms': 2073.7998849999713, 'mean_ms': 2050.5066501998044, 'requests': 640, 'gen_tokens': 81920, 'wall_s': 10.273958520000178}
+256 {'tokens_per_s': 9133.394625948236, 'p50_ms': 3566.3959080002314, 'p95_ms': 3632.9963459998, 'mean_ms': 3579.315344400038, 'requests': 1280, 'gen_tokens': 163840, 'wall_s': 17.938565747999746}
+[saved] results_extra/Tesla_T4/serve_vllm.json
+(EngineCore pid=1200) INFO 11-03 06:14:35 [core.py:1313] [shutdown] EngineCore: trigger received signal=SIGTERM
+(EngineCore pid=1200) INFO 11-03 06:14:35 [core.py:1432] [shutdown] EngineCore: start mode=abort timeout=0s
+(EngineCore pid=1200) INFO 11-03 06:14:35 [core.py:1463] [shutdown] EngineCore: request processing complete; starting resource teardown
+(EngineCore pid=1200) INFO 11-03 06:14:35 [core.py:1326] [shutdown] EngineCore: exiting busy loop
+!python -c "import json;[print(m['gold'],'->',m['pred'],'|',m['text']) for m in json.load(open('results/Tesla_T4/hw4a_train.json'))['worst_class_misclassified']]"
+0 -> 1 | "I may be Asian, but it doesn't mean I automatically like T-ara. I'm not even familiar with KPOP. #DirectionersFuneral"
+0 -> 1 | when you hungry af but Dunkin is closed on Sunday's &amp; conn don't open until 10
+0 -> 1 | "Well Jokes apart, today or tomorrow Yakub has to meet with with 72 Hoors. S"
+0 -> 1 | HOF president: Frank Gifford 'built the game': The passing of Frank Gifford cast a cloud over Sunday's proceed...
+0 -> 2 | Kanye West to run for US president No guys c'mon. POTUS is the most powerful man in the world. Get serious. Tho he'd be bettern tham Trump
+!python partA_batch_scaling.py --slice $SLICE --seed $SEED --full-epoch
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+{'batch_size': 8, 'ok': True, 'samples_per_s': 39.9980487451894, 'peak_mem_alloc_gb': 2.247845888, 'peak_mem_reserved_gb': 2.430599168, 'est_epoch_time_s': 87.50426857812528}
+
+{'batch_size': 16, 'ok': True, 'samples_per_s': 44.75673348313432, 'peak_mem_alloc_gb': 2.661423104, 'peak_mem_reserved_gb': 3.032481792, 'est_epoch_time_s': 78.2005237562501}
+
+{'batch_size': 32, 'ok': True, 'samples_per_s': 47.29103138142667, 'peak_mem_alloc_gb': 4.00940032, 'peak_mem_reserved_gb': 4.248829952, 'est_epoch_time_s': 74.00980477187495}
+
+{'batch_size': 64, 'ok': True, 'samples_per_s': 48.33445432890634, 'peak_mem_alloc_gb': 6.5573376, 'peak_mem_reserved_gb': 6.70040064, 'est_epoch_time_s': 72.41211364843797}
+
+{'batch_size': 128, 'ok': True, 'samples_per_s': 50.382560740059446, 'peak_mem_alloc_gb': 11.76076544, 'peak_mem_reserved_gb': 12.108955648, 'est_epoch_time_s': 69.46848172441405}
+
+{'batch_size': 256, 'ok': False, 'error': 'OOM'}
+
+[saved] results/Tesla_T4/partA.json
+Max batch on Tesla T4: 128 (OOM at 256)
+!python partB_memory_techniques.py --slice $SLICE --seed $SEED --combo amp=fp16 optim=adamw8bit
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+===== Baseline (HW4 settings) =====
+
+{'batch_size': 8, 'ok': True, 'samples_per_s': 41.39370626225939, 'peak_mem_alloc_gb': 2.247845888, 'peak_mem_reserved_gb': 2.430599168, 'est_epoch_time_s': 84.5539169125118}
+
+{'batch_size': 16, 'ok': True, 'samples_per_s': 46.80101860428115, 'peak_mem_alloc_gb': 2.661423104, 'peak_mem_reserved_gb': 3.032481792, 'est_epoch_time_s': 74.78469709374735}
+
+{'batch_size': 32, 'ok': True, 'samples_per_s': 50.58392656621928, 'peak_mem_alloc_gb': 4.00940032, 'peak_mem_reserved_gb': 4.248829952, 'est_epoch_time_s': 69.1919397640703}
+
+{'batch_size': 64, 'ok': True, 'samples_per_s': 50.382260194012, 'peak_mem_alloc_gb': 6.5573376, 'peak_mem_reserved_gb': 6.70040064, 'est_epoch_time_s': 69.46889612578317}
+
+{'batch_size': 128, 'ok': True, 'samples_per_s': 48.316043260030135, 'peak_mem_alloc_gb': 11.76076544, 'peak_mem_reserved_gb': 12.108955648, 'est_epoch_time_s': 72.43970664492316}
+
+{'batch_size': 256, 'ok': False, 'error': 'OOM'}
+
+{'epoch': 1, 'train_loss': 0.9634, 'epoch_time_s': 72.4495, 'samples_per_s': 48.3095, 'val_loss': 0.8715, 'val_acc': 0.5693}
+{'epoch': 2, 'train_loss': 0.6692, 'epoch_time_s': 72.3697, 'samples_per_s': 48.3628, 'val_loss': 0.7731, 'val_acc': 0.6387}
+{'epoch': 3, 'train_loss': 0.4623, 'epoch_time_s': 72.7624, 'samples_per_s': 48.1017, 'val_loss': 0.7757, 'val_acc': 0.672}
+{'epoch': 4, 'train_loss': 0.334, 'epoch_time_s': 72.3124, 'samples_per_s': 48.4011, 'val_loss': 0.8118, 'val_acc': 0.6813}
+{'technique': 'Baseline (HW4 settings)', 'max_batch': 128, 'ref_batch': 32, 'samples_per_s': 48.818950797598085, 'peak_mem_alloc_gb': 4.00940032, 'peak_mem_reserved_gb': 4.248829952, 'test_acc': 0.6813333333333333, 'train_time_s': 289.89407192900035, 'full_run_samples_per_s': 48.29350219837825, 'full_run_peak_mem_gb': 4.00940032, 'opt_steps': 440}
+[saved] results/Tesla_T4/partB.json
+
+===== Mixed precision (bf16) =====
+
+{'batch_size': 8, 'ok': True, 'samples_per_s': 29.394419178004913, 'peak_mem_alloc_gb': 2.240374784, 'peak_mem_reserved_gb': 2.45366784, 'est_epoch_time_s': 119.07022141872972}
+
+{'batch_size': 16, 'ok': True, 'samples_per_s': 32.42025346848949, 'peak_mem_alloc_gb': 2.869563904, 'peak_mem_reserved_gb': 3.101687808, 'est_epoch_time_s': 107.95720654688239}
+
+{'batch_size': 32, 'ok': True, 'samples_per_s': 33.86419832692328, 'peak_mem_alloc_gb': 4.150216192, 'peak_mem_reserved_gb': 4.23624704, 'est_epoch_time_s': 103.3539895500013}
+
+{'batch_size': 64, 'ok': True, 'samples_per_s': 34.63520183007328, 'peak_mem_alloc_gb': 6.66650368, 'peak_mem_reserved_gb': 6.798966784, 'est_epoch_time_s': 101.05325839218864}
+
+{'batch_size': 128, 'ok': True, 'samples_per_s': 34.5978316500104, 'peak_mem_alloc_gb': 11.80166144, 'peak_mem_reserved_gb': 12.022972416, 'est_epoch_time_s': 101.1624091187503}
+
+{'batch_size': 256, 'ok': False, 'error': 'OOM'}
+
+{'epoch': 1, 'train_loss': 0.9705, 'epoch_time_s': 103.1456, 'samples_per_s': 33.9326, 'val_loss': 0.9501, 'val_acc': 0.5347}
+{'epoch': 2, 'train_loss': 0.6709, 'epoch_time_s': 103.2798, 'samples_per_s': 33.8885, 'val_loss': 0.8083, 'val_acc': 0.6333}
+{'epoch': 3, 'train_loss': 0.4658, 'epoch_time_s': 103.3423, 'samples_per_s': 33.868, 'val_loss': 0.7971, 'val_acc': 0.6627}
+{'epoch': 4, 'train_loss': 0.3391, 'epoch_time_s': 103.4458, 'samples_per_s': 33.8341, 'val_loss': 0.8161, 'val_acc': 0.676}
+{'technique': 'Mixed precision (bf16)', 'max_batch': 128, 'ref_batch': 32, 'samples_per_s': 33.98065881201888, 'peak_mem_alloc_gb': 4.150216192, 'peak_mem_reserved_gb': 4.23624704, 'test_acc': 0.6706666666666666, 'train_time_s': 413.21344023299935, 'full_run_samples_per_s': 33.880795339342775, 'full_run_peak_mem_gb': 4.150216192, 'opt_steps': 440}
+[saved] results/Tesla_T4/partB.json
+
+===== Gradient checkpointing =====
+
+{'batch_size': 8, 'ok': True, 'samples_per_s': 30.339630516302783, 'peak_mem_alloc_gb': 2.251717632, 'peak_mem_reserved_gb': 2.424307712, 'est_epoch_time_s': 115.36066657500328}
+
+{'batch_size': 16, 'ok': True, 'samples_per_s': 33.43605109744032, 'peak_mem_alloc_gb': 2.223876096, 'peak_mem_reserved_gb': 2.399141888, 'est_epoch_time_s': 104.67743304375858}
+
+{'batch_size': 32, 'ok': True, 'samples_per_s': 36.1909501060151, 'peak_mem_alloc_gb': 2.24068608, 'peak_mem_reserved_gb': 2.378170368, 'est_epoch_time_s': 96.7092599046822}
+
+{'batch_size': 64, 'ok': True, 'samples_per_s': 35.837705542507884, 'peak_mem_alloc_gb': 2.235018752, 'peak_mem_reserved_gb': 2.805989376, 'est_epoch_time_s': 97.66250230078413}
+
+{'batch_size': 128, 'ok': True, 'samples_per_s': 36.26510982967933, 'peak_mem_alloc_gb': 3.05478144, 'peak_mem_reserved_gb': 3.462397952, 'est_epoch_time_s': 96.51149593749757}
+
+{'batch_size': 256, 'ok': True, 'samples_per_s': 37.19841482859872, 'peak_mem_alloc_gb': 4.742905856, 'peak_mem_reserved_gb': 5.395972096, 'est_epoch_time_s': 94.09003088242204}
+
+{'batch_size': 512, 'ok': True, 'samples_per_s': 37.41386348858504, 'peak_mem_alloc_gb': 8.14134272, 'peak_mem_reserved_gb': 9.061793792, 'est_epoch_time_s': 93.54821110810568}
+
+{'batch_size': 1024, 'ok': False, 'error': 'OOM'}
+
+{'epoch': 1, 'train_loss': 0.9635, 'epoch_time_s': 96.5788, 'samples_per_s': 36.2398, 'val_loss': 0.8722, 'val_acc': 0.5693}
+{'epoch': 2, 'train_loss': 0.669, 'epoch_time_s': 96.7961, 'samples_per_s': 36.1585, 'val_loss': 0.774, 'val_acc': 0.636}
+{'epoch': 3, 'train_loss': 0.4625, 'epoch_time_s': 96.8472, 'samples_per_s': 36.1394, 'val_loss': 0.7734, 'val_acc': 0.6707}
+{'epoch': 4, 'train_loss': 0.334, 'epoch_time_s': 96.8469, 'samples_per_s': 36.1395, 'val_loss': 0.8104, 'val_acc': 0.684}
+{'technique': 'Gradient checkpointing', 'max_batch': 512, 'ref_batch': 32, 'samples_per_s': 36.23554987409028, 'peak_mem_alloc_gb': 2.24068608, 'peak_mem_reserved_gb': 2.378170368, 'test_acc': 0.6813333333333333, 'train_time_s': 387.06898206799815, 'full_run_samples_per_s': 36.169263486839036, 'full_run_peak_mem_gb': 2.24068608, 'opt_steps': 440}
+[saved] results/Tesla_T4/partB.json
+
+===== 8-bit optimiser (adamw8bit) =====
+
+{'batch_size': 8, 'ok': True, 'samples_per_s': 39.569520613241615, 'peak_mem_alloc_gb': 1.355256832, 'peak_mem_reserved_gb': 1.556086784, 'est_epoch_time_s': 88.45191818747367}
+
+{'batch_size': 16, 'ok': True, 'samples_per_s': 44.62450236536288, 'peak_mem_alloc_gb': 2.016167936, 'peak_mem_reserved_gb': 2.229272576, 'est_epoch_time_s': 78.43224718437796}
+
+{'batch_size': 32, 'ok': True, 'samples_per_s': 48.75807461732338, 'peak_mem_alloc_gb': 3.318490112, 'peak_mem_reserved_gb': 3.542089728, 'est_epoch_time_s': 71.78298215156502}
+
+{'batch_size': 64, 'ok': True, 'samples_per_s': 49.644854799369455, 'peak_mem_alloc_gb': 5.905130496, 'peak_mem_reserved_gb': 6.012534784, 'est_epoch_time_s': 70.50076013203395}
+
+{'batch_size': 128, 'ok': True, 'samples_per_s': 50.011795879854304, 'peak_mem_alloc_gb': 11.09942528, 'peak_mem_reserved_gb': 11.274289152, 'est_epoch_time_s': 69.98348966328294}
+
+{'batch_size': 256, 'ok': False, 'error': 'OOM'}
+
+{'epoch': 1, 'train_loss': 0.9638, 'epoch_time_s': 72.0233, 'samples_per_s': 48.5954, 'val_loss': 0.8792, 'val_acc': 0.5653}
+{'epoch': 2, 'train_loss': 0.6676, 'epoch_time_s': 72.0981, 'samples_per_s': 48.545, 'val_loss': 0.7767, 'val_acc': 0.64}
+{'epoch': 3, 'train_loss': 0.4594, 'epoch_time_s': 72.1373, 'samples_per_s': 48.5186, 'val_loss': 0.7777, 'val_acc': 0.6653}
+{'epoch': 4, 'train_loss': 0.3291, 'epoch_time_s': 72.0546, 'samples_per_s': 48.5743, 'val_loss': 0.8204, 'val_acc': 0.676}
+{'technique': '8-bit optimiser (adamw8bit)', 'max_batch': 128, 'ref_batch': 32, 'samples_per_s': 48.58225286422388, 'peak_mem_alloc_gb': 3.318490112, 'peak_mem_reserved_gb': 3.542089728, 'test_acc': 0.676, 'train_time_s': 288.31332221400044, 'full_run_samples_per_s': 48.558283372034076, 'full_run_peak_mem_gb': 3.318490112, 'opt_steps': 440}
+[saved] results/Tesla_T4/partB.json
+
+===== Gradient accumulation (8x32=256) =====
+
+{'batch_size': 8, 'ok': True, 'samples_per_s': 45.72747579161162, 'peak_mem_alloc_gb': 2.244115456, 'peak_mem_reserved_gb': 2.428502016, 'est_epoch_time_s': 76.540415568752}
+
+{'batch_size': 16, 'ok': True, 'samples_per_s': 48.53084731607878, 'peak_mem_alloc_gb': 2.235964416, 'peak_mem_reserved_gb': 2.60046848, 'est_epoch_time_s': 72.11907876251757}
+
+{'batch_size': 32, 'ok': True, 'samples_per_s': 50.981489989517826, 'peak_mem_alloc_gb': 3.546717184, 'peak_mem_reserved_gb': 3.915382784, 'est_epoch_time_s': 68.65236776562682}
+
+{'batch_size': 64, 'ok': True, 'samples_per_s': 50.73310447738326, 'peak_mem_alloc_gb': 6.122525696, 'peak_mem_reserved_gb': 6.21805568, 'est_epoch_time_s': 68.98848466015508}
+
+{'batch_size': 128, 'ok': True, 'samples_per_s': 50.510144948625125, 'peak_mem_alloc_gb': 11.317564928, 'peak_mem_reserved_gb': 11.454644224, 'est_epoch_time_s': 69.29301041523281}
+
+{'batch_size': 256, 'ok': False, 'error': 'OOM'}
+
+{'epoch': 1, 'train_loss': 1.0625, 'epoch_time_s': 75.5343, 'samples_per_s': 46.3365, 'val_loss': 0.9995, 'val_acc': 0.5173}
+{'epoch': 2, 'train_loss': 0.9678, 'epoch_time_s': 75.3318, 'samples_per_s': 46.4611, 'val_loss': 0.9493, 'val_acc': 0.5627}
+{'epoch': 3, 'train_loss': 0.9099, 'epoch_time_s': 75.2175, 'samples_per_s': 46.5317, 'val_loss': 0.9165, 'val_acc': 0.5853}
+{'epoch': 4, 'train_loss': 0.8776, 'epoch_time_s': 54.951, 'samples_per_s': 46.587, 'val_loss': 0.9107, 'val_acc': 0.592}
+{'technique': 'Gradient accumulation (8x32=256)', 'max_batch': 128, 'max_effective_batch': 4096, 'ref_batch': 8, 'samples_per_s': 46.04653332652769, 'peak_mem_alloc_gb': 2.256365568, 'peak_mem_reserved_gb': 2.428502016, 'test_acc': 0.5986666666666667, 'train_time_s': 281.0346098400005, 'full_run_samples_per_s': 46.47114463031924, 'full_run_peak_mem_gb': 2.476294144, 'opt_steps': 52}
+
+[saved] results/Tesla_T4/partB.json
+
+===== Best combination (amp=fp16, optim=adamw8bit) =====
+
+{'batch_size': 8, 'ok': True, 'samples_per_s': 93.24452094204905, 'peak_mem_alloc_gb': 1.321739776, 'peak_mem_reserved_gb': 1.442840576, 'est_epoch_time_s': 37.53571753749725}
+
+{'batch_size': 16, 'ok': True, 'samples_per_s': 129.45946039820464, 'peak_mem_alloc_gb': 1.742882816, 'peak_mem_reserved_gb': 1.8874368, 'est_epoch_time_s': 27.0354904093864}
+
+{'batch_size': 32, 'ok': True, 'samples_per_s': 162.23125363043343, 'peak_mem_alloc_gb': 2.57579264, 'peak_mem_reserved_gb': 2.66338304, 'est_epoch_time_s': 21.574141367193533}
+
+{'batch_size': 64, 'ok': True, 'samples_per_s': 186.58398045195068, 'peak_mem_alloc_gb': 4.235393536, 'peak_mem_reserved_gb': 4.347396096, 'est_epoch_time_s': 18.758309215625957}
+
+{'batch_size': 128, 'ok': True, 'samples_per_s': 203.97406992575156, 'peak_mem_alloc_gb': 7.579761664, 'peak_mem_reserved_gb': 7.757365248, 'est_epoch_time_s': 17.15904380039106}
+
+{'batch_size': 256, 'ok': True, 'samples_per_s': 207.4520374550125, 'peak_mem_alloc_gb': 14.272299008, 'peak_mem_reserved_gb': 14.566817792, 'est_epoch_time_s': 16.8713696087897}
+
+{'batch_size': 512, 'ok': False, 'error': 'OOM'}
+
+{'epoch': 1, 'train_loss': 0.9777, 'epoch_time_s': 21.7351, 'samples_per_s': 161.0301, 'val_loss': 0.9252, 'val_acc': 0.54}
+{'epoch': 2, 'train_loss': 0.6748, 'epoch_time_s': 21.6757, 'samples_per_s': 161.4713, 'val_loss': 0.7832, 'val_acc': 0.6387}
+{'epoch': 3, 'train_loss': 0.462, 'epoch_time_s': 21.6969, 'samples_per_s': 161.313, 'val_loss': 0.79, 'val_acc': 0.6693}
+{'epoch': 4, 'train_loss': 0.3316, 'epoch_time_s': 21.6449, 'samples_per_s': 161.7006, 'val_loss': 0.8309, 'val_acc': 0.6693}
+{'technique': 'Best combination (amp=fp16, optim=adamw8bit)', 'max_batch': 256, 'ref_batch': 32, 'samples_per_s': 161.92805585156134, 'peak_mem_alloc_gb': 2.57579264, 'peak_mem_reserved_gb': 2.66338304, 'test_acc': 0.68, 'train_time_s': 86.75262749200101, 'full_run_samples_per_s': 161.3783974588074, 'full_run_peak_mem_gb': 2.57579264, 'opt_steps': 440}
+[saved] results/Tesla_T4/partB.json
+!python partB_memory_techniques.py --slice $SLICE --seed $SEED --only amp --amp-dtype fp16 --out results_fp16
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+===== Mixed precision (fp16) =====
+
+{'batch_size': 8, 'ok': True, 'samples_per_s': 88.21961304893578, 'peak_mem_alloc_gb': 2.244570624, 'peak_mem_reserved_gb': 2.45366784, 'est_epoch_time_s': 39.673717431276145}
+
+{'batch_size': 16, 'ok': True, 'samples_per_s': 125.56121182576607, 'peak_mem_alloc_gb': 2.405439488, 'peak_mem_reserved_gb': 2.617245696, 'est_epoch_time_s': 27.874850434358223}
+
+{'batch_size': 32, 'ok': True, 'samples_per_s': 161.73665346251917, 'peak_mem_alloc_gb': 3.238611456, 'peak_mem_reserved_gb': 3.426746368, 'est_epoch_time_s': 21.640116356253714}
+
+{'batch_size': 64, 'ok': True, 'samples_per_s': 186.4303346719438, 'peak_mem_alloc_gb': 4.90070272, 'peak_mem_reserved_gb': 4.993318912, 'est_epoch_time_s': 18.773768797652224}
+
+{'batch_size': 128, 'ok': True, 'samples_per_s': 201.31964511493678, 'peak_mem_alloc_gb': 8.238779392, 'peak_mem_reserved_gb': 8.428453888, 'est_epoch_time_s': 17.38528794843539}
+
+{'batch_size': 256, 'ok': True, 'samples_per_s': 198.74156291167057, 'peak_mem_alloc_gb': 14.937083904, 'peak_mem_reserved_gb': 15.210643456, 'est_epoch_time_s': 17.610810485351536}
+
+{'batch_size': 512, 'ok': False, 'error': 'OOM'}
+
+{'epoch': 1, 'train_loss': 0.9795, 'epoch_time_s': 22.2172, 'samples_per_s': 157.5357, 'val_loss': 0.9052, 'val_acc': 0.5453}
+{'epoch': 2, 'train_loss': 0.6778, 'epoch_time_s': 22.053, 'samples_per_s': 158.7083, 'val_loss': 0.7859, 'val_acc': 0.6373}
+{'epoch': 3, 'train_loss': 0.4691, 'epoch_time_s': 22.2576, 'samples_per_s': 157.2494, 'val_loss': 0.7833, 'val_acc': 0.6667}
+{'epoch': 4, 'train_loss': 0.339, 'epoch_time_s': 22.2968, 'samples_per_s': 156.9734, 'val_loss': 0.8222, 'val_acc': 0.6707}
+{'technique': 'Mixed precision (fp16)', 'max_batch': 256, 'ref_batch': 32, 'samples_per_s': 154.11377639519887, 'peak_mem_alloc_gb': 3.238611456, 'peak_mem_reserved_gb': 3.426746368, 'test_acc': 0.6733333333333333, 'train_time_s': 88.82463355499931, 'full_run_samples_per_s': 157.61393478005562, 'full_run_peak_mem_gb': 3.238611456, 'opt_steps': 440}
+[saved] results_fp16/Tesla_T4/partB.json
+import json
+main = json.load(open("results/Tesla_T4/partB.json"))
+fp16 = json.load(open("results_fp16/Tesla_T4/partB.json"))
+main["results"]["amp_bf16_emulated"] = main["results"]["amp"]   # keep it as evidence
+main["results"]["amp"] = fp16["results"]["amp"]
+json.dump(main, open("results/Tesla_T4/partB.json", "w"), indent=2)
+print({k: (round(v["samples_per_s"],1), round(v["peak_mem_alloc_gb"],2), round(v["test_acc"],4)) for k, v in main["results"].items()})
+{'baseline': (48.8, 4.01, 0.6813), 'amp': (154.1, 3.24, 0.6733), 'ckpt': (36.2, 2.24, 0.6813), 'optim8': (48.6, 3.32, 0.676), 'accum': (46.0, 2.26, 0.5987), 'combo': (161.9, 2.58, 0.68), 'amp_bf16_emulated': (153.9, 3.24, 0.6747)}
+import json
+p="results/Tesla_T4/partB.json"; m=json.load(open(p)); m["results"].pop("amp_bf16_emulated",None); json.dump(m,open(p,"w"),indent=2); print(list(m["results"]))
+['baseline', 'amp', 'ckpt', 'optim8', 'accum', 'combo']
+!torchrun --nproc_per_node=1 partC_ddp.py --slice $SLICE --seed $SEED
+!torchrun --nproc_per_node=2 partC_ddp.py --slice $SLICE --seed $SEED
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+	GPU0	GPU1	CPU Affinity	NUMA Affinity	GPU NUMA ID
+GPU0	 X 	PHB	0-3	0		N/A
+GPU1	PHB	 X 	0-3	0		N/A
+
+Legend:
+
+  X    = Self
+  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)
+  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node
+  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)
+  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)
+  PIX  = Connection traversing at most a single PCIe bridge
+  NV#  = Connection traversing a bonded set of # NVLinks
+
+{'per_gpu_batch': 8, 'global_batch': 8, 'ok': True, 'step_time_ms': 184.81524288654327, 'step_time_nosync_ms': 186.96214258670807, 'comm_overhead_ms': -2.146899700164795, 'comm_fraction': -0.011616464457332457, 'compute_ms_per_rank': [149.7795432806015], 'slowest_minus_fastest_compute_ms': 0.0, 'throughput_samples_per_s': 43.28647288530817, 'grad_allreduce_effective_GBps': None, 'dominant': 'computation'}
+{'per_gpu_batch': 16, 'global_batch': 16, 'ok': True, 'step_time_ms': 338.8306200504303, 'step_time_nosync_ms': 345.6087112426758, 'comm_overhead_ms': -6.778091192245483, 'comm_fraction': -0.020004364396690764, 'compute_ms_per_rank': [308.2658350467682], 'slowest_minus_fastest_compute_ms': 0.0, 'throughput_samples_per_s': 47.221234012494556, 'grad_allreduce_effective_GBps': None, 'dominant': 'computation'}
+{'per_gpu_batch': 32, 'global_batch': 32, 'ok': True, 'step_time_ms': 662.5721454620361, 'step_time_nosync_ms': 662.5745296478271, 'comm_overhead_ms': -0.002384185791015625, 'comm_fraction': -3.5983791460974317e-06, 'compute_ms_per_rank': [624.9695420265198], 'slowest_minus_fastest_compute_ms': 0.0, 'throughput_samples_per_s': 48.29662734717774, 'grad_allreduce_effective_GBps': None, 'dominant': 'computation'}
+{'per_gpu_batch': 64, 'global_batch': 64, 'ok': True, 'step_time_ms': 1251.3647079467773, 'step_time_nosync_ms': 1274.9676704406738, 'comm_overhead_ms': -23.602962493896484, 'comm_fraction': -0.01886177734117491, 'compute_ms_per_rank': [1237.3946905136108], 'slowest_minus_fastest_compute_ms': 0.0, 'throughput_samples_per_s': 51.144162523977805, 'grad_allreduce_effective_GBps': None, 'dominant': 'computation'}
+{'per_gpu_batch': 128, 'global_batch': 128, 'ok': True, 'step_time_ms': 2507.9150199890137, 'step_time_nosync_ms': 2529.25181388855, 'comm_overhead_ms': -21.336793899536133, 'comm_fraction': -0.008507781854438434, 'compute_ms_per_rank': [2491.6908740997314], 'slowest_minus_fastest_compute_ms': 0.0, 'throughput_samples_per_s': 51.03841197958961, 'grad_allreduce_effective_GBps': None, 'dominant': 'computation'}
+[saved] results/Tesla_T4/partC_ws1.json
+W1103 07:23:55.817000 1774 torch/distributed/run.py:851] 
+W1103 07:23:55.817000 1774 torch/distributed/run.py:851] *****************************************
+W1103 07:23:55.817000 1774 torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W1103 07:23:55.817000 1774 torch/distributed/run.py:851] *****************************************
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+	GPU0	GPU1	CPU Affinity	NUMA Affinity	GPU NUMA ID
+GPU0	 X 	PHB	0-3	0		N/A
+GPU1	PHB	 X 	0-3	0		N/A
+
+Legend:
+
+  X    = Self
+  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)
+  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node
+  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)
+  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)
+  PIX  = Connection traversing at most a single PCIe bridge
+  NV#  = Connection traversing a bonded set of # NVLinks
+
+{'per_gpu_batch': 8, 'global_batch': 16, 'ok': True, 'step_time_ms': 220.9644913673401, 'step_time_nosync_ms': 198.20140302181244, 'comm_overhead_ms': 22.76308834552765, 'comm_fraction': 0.10301695174943468, 'compute_ms_per_rank': [160.98977625370026, 130.33384084701538], 'slowest_minus_fastest_compute_ms': 30.655935406684875, 'throughput_samples_per_s': 72.40982431607515, 'grad_allreduce_effective_GBps': 19.23896183823595, 'dominant': 'computation'}
+{'per_gpu_batch': 16, 'global_batch': 32, 'ok': True, 'step_time_ms': 388.84395360946655, 'step_time_nosync_ms': 368.84963512420654, 'comm_overhead_ms': 19.99431848526001, 'comm_fraction': 0.05141990327909587, 'compute_ms_per_rank': [331.4895033836365, 265.8567428588867], 'slowest_minus_fastest_compute_ms': 65.63276052474976, 'throughput_samples_per_s': 82.29522332277034, 'grad_allreduce_effective_GBps': 21.903131548237162, 'dominant': 'computation'}
+{'per_gpu_batch': 32, 'global_batch': 64, 'ok': True, 'step_time_ms': 674.6109127998352, 'step_time_nosync_ms': 637.9819512367249, 'comm_overhead_ms': 36.62896156311035, 'comm_fraction': 0.05429642608520711, 'compute_ms_per_rank': [600.5252599716187, 545.167088508606], 'slowest_minus_fastest_compute_ms': 55.358171463012695, 'throughput_samples_per_s': 94.86950001206034, 'grad_allreduce_effective_GBps': 11.956063434816425, 'dominant': 'computation'}
+{'per_gpu_batch': 64, 'global_batch': 128, 'ok': True, 'step_time_ms': 1294.9656248092651, 'step_time_nosync_ms': 1262.703776359558, 'comm_overhead_ms': 32.26184844970703, 'comm_fraction': 0.02491328559741411, 'compute_ms_per_rank': [1225.128412246704, 1206.0558795928955], 'slowest_minus_fastest_compute_ms': 19.072532653808594, 'throughput_samples_per_s': 98.84432261964719, 'grad_allreduce_effective_GBps': 13.574491513798456, 'dominant': 'computation'}
+{'per_gpu_batch': 128, 'global_batch': 256, 'ok': True, 'step_time_ms': 2554.018497467041, 'step_time_nosync_ms': 2527.9955863952637, 'comm_overhead_ms': 26.022911071777344, 'comm_fraction': 0.010189006499986464, 'compute_ms_per_rank': [2490.3740882873535, 2393.038034439087], 'slowest_minus_fastest_compute_ms': 97.3360538482666, 'throughput_samples_per_s': 100.23419965591053, 'grad_allreduce_effective_GBps': 16.828946876545167, 'dominant': 'computation'}
+/usr/local/lib/python3.13/dist-packages/torch/distributed/c10d_logger.py:83: UserWarning: barrier(): using the device under current context. You can specify `device_id` in `init_process_group` to mute this warning.
+  return func(*args, **kwargs)
+[saved] results/Tesla_T4/partC_ws2.json
+!python -c "import json;print(json.load(open('results/Tesla_T4/partC_ws2.json'))['allreduce_benchmark'])"
+{'bytes': 437938188, 'time_ms': 56.290378399990004, 'algbw_GBps': 7.779983017489855, 'busbw_GBps': 7.779983017489855}
+!python serve_bench.py --mode kv --model Qwen/Qwen2.5-0.5B-Instruct --dtype $DTYPE
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+{'context': 256, 'kv_gb_measured': 0.025165824, 'kv_gb_analytic': 0.025165824, 'peak_delta_gb': 0.147307008, 'ok': True}
+{'context': 512, 'kv_gb_measured': 0.050331648, 'kv_gb_analytic': 0.050331648, 'peak_delta_gb': 0.408121856, 'ok': True}
+{'context': 1024, 'kv_gb_measured': 0.100663296, 'kv_gb_analytic': 0.100663296, 'peak_delta_gb': 1.347346944, 'ok': True}
+{'context': 2048, 'kv_gb_measured': 0.201326592, 'kv_gb_analytic': 0.201326592, 'peak_delta_gb': 4.815962624, 'ok': True}
+{'context': 4096, 'ok': False, 'error': 'OOM'}
+INFO 11-03 07:31:32 [api_utils.py:273] non-default args: {'dtype': 'half', 'max_model_len': 32768, 'gpu_memory_utilization': 0.9, 'disable_log_stats': True, 'model': 'Qwen/Qwen2.5-0.5B-Instruct'}
+INFO 11-03 07:31:33 [model.py:623] Resolved architecture: Qwen2ForCausalLM
+WARNING 11-03 07:31:33 [model.py:2123] Casting torch.bfloat16 to torch.float16.
+INFO 11-03 07:31:33 [model.py:1788] Using max model len 32768
+INFO 11-03 07:31:33 [scheduler.py:252] Chunked prefill is enabled with max_num_batched_tokens=8192.
+INFO 11-03 07:31:33 [vllm.py:1109] Asynchronous scheduling is enabled.
+INFO 11-03 07:31:33 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+WARNING 11-03 07:31:37 [system_utils.py:157] We must use the `spawn` multiprocessing start method. Overriding VLLM_WORKER_MULTIPROC_METHOD to 'spawn'. See https://docs.vllm.ai/en/latest/usage/troubleshooting.html#python-multiprocessing for more information. Reasons: CUDA is initialized
+(EngineCore pid=1870) INFO 11-03 07:31:52 [parallel_state.py:1615] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.19.2.2:39801 backend=nccl
+(EngineCore pid=1870) INFO 11-03 07:31:52 [parallel_state.py:1946] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=1870) INFO 11-03 07:31:52 [gpu_worker.py:378] Using V2 Model Runner
+(EngineCore pid=1870) INFO 11-03 07:31:53 [model_runner.py:284] Loading model from scratch...
+(EngineCore pid=1870) ERROR 11-03 07:31:53 [fa_utils.py:253] Cannot use FA version 2 is not supported due to FA2 is only supported on devices with compute capability >= 8
+(EngineCore pid=1870) INFO 11-03 07:31:55 [cuda.py:482] Using TRITON_ATTN attention backend out of potential backends: ['TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=1870) Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+(EngineCore pid=1870) INFO 11-03 07:31:56 [weight_utils.py:574] No model.safetensors.index.json found in remote.
+(EngineCore pid=1870) INFO 11-03 07:31:56 [weight_utils.py:869] Filesystem type for checkpoints: OVERLAY. Checkpoint size: 0.92 GiB. Available RAM: 26.81 GiB.
+(EngineCore pid=1870) INFO 11-03 07:31:56 [weight_utils.py:892] Auto-prefetch is disabled because the filesystem (OVERLAY) is not a recognized network FS (NFS/Lustre). If you want to force prefetching, start vLLM with --safetensors-load-strategy=prefetch.
+(EngineCore pid=1870) 
+(EngineCore pid=1870) INFO 11-03 07:31:58 [model_runner.py:305] Model loading took 0.93 GiB and 4.956496 seconds
+(EngineCore pid=1870) WARNING 11-03 07:31:58 [topk_topp_sampler.py:62] FlashInfer top-p/top-k sampling unavailable: unsupported compute capability 7.5; falling back. Set VLLM_USE_FLASHINFER_SAMPLER=0 to silence.
+(EngineCore pid=1870) INFO 11-03 07:32:04 [backends.py:1094] Using cache directory: /root/.cache/vllm/torch_compile_cache/5f71d72b82/rank_0_0/backbone for vLLM's torch.compile
+(EngineCore pid=1870) INFO 11-03 07:32:04 [backends.py:1155] Dynamo bytecode transform time: 6.28 s
+(EngineCore pid=1870) INFO 11-03 07:32:08 [backends.py:378] Cache the graph of compile range (1, 8192) for later use
+(EngineCore pid=1870) [rank0]:W1103 07:32:09.473000 1870 torch/_inductor/utils.py:1731] Not enough SMs to use max_autotune_gemm mode
+(EngineCore pid=1870) INFO 11-03 07:32:13 [backends.py:393] Compiling a graph for compile range (1, 8192) takes 8.43 s
+(EngineCore pid=1870) INFO 11-03 07:32:16 [decorators.py:708] saved AOT compiled function to /root/.cache/vllm/torch_compile_cache/torch_aot_compile/3e44fa84f1dbe7df19ba838a1bd1b9ad609ab7e95a83bb88f16b8304dbc681bc/rank_0_0/model
+(EngineCore pid=1870) INFO 11-03 07:32:16 [monitor.py:53] torch.compile took 17.97 s in total
+(EngineCore pid=1870) INFO 11-03 07:32:16 [monitor.py:81] Initial profiling/warmup run took 0.30 s
+(EngineCore pid=1870) INFO 11-03 07:32:19 [gpu_worker.py:560] Available KV cache memory: 11.85 GiB
+(EngineCore pid=1870) INFO 11-03 07:32:19 [kv_cache_utils.py:2177] GPU KV cache size: 1,035,472 tokens
+(EngineCore pid=1870) INFO 11-03 07:32:19 [kv_cache_utils.py:2178] Maximum concurrency for 32,768 tokens per request: 31.60x
+(EngineCore pid=1870) INFO 11-03 07:32:19 [cutedsl_warmup.py:101] Skipping CuTeDSL warmup because no compile units were requested.
+(EngineCore pid=1870) INFO 11-03 07:32:29 [model_runner.py:747] Graph capturing finished in 10 secs, took 0.34 GiB
+(EngineCore pid=1870) INFO 11-03 07:32:29 [gpu_worker.py:857] Free memory on device (14.31/14.56 GiB) on startup. Desired GPU memory utilization is (0.9, 13.11 GiB). Actual usage is 0.93 GiB for weight, 0.28 GiB for peak activation, 0.05 GiB for non-torch memory, and 0.34 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=12197591245` (11.36 GiB) to fit into requested memory, or `--kv-cache-memory=13489744896` (12.56 GiB) to fully utilize gpu memory. Current kv cache memory in use is 11.85 GiB.
+(EngineCore pid=1870) INFO 11-03 07:32:45 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+(EngineCore pid=1870) INFO 11-03 07:32:45 [core.py:340] init engine (profile, create kv cache, warmup model) took 47.70 s (compilation: 17.97 s)
+(EngineCore pid=1870) INFO 11-03 07:32:47 [vllm.py:1109] Asynchronous scheduling is enabled.
+(EngineCore pid=1870) INFO 11-03 07:32:47 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=1870) WARNING 11-03 07:32:48 [jit_monitor.py:135] Triton kernel JIT compilation during inference: kernel_unified_attention. This causes a latency spike; consider extending warmup to cover this shape/config.
+[saved] results/Tesla_T4/kv_cache.json
+(EngineCore pid=1870) INFO 11-03 07:42:20 [core.py:1313] [shutdown] EngineCore: trigger received signal=SIGTERM
+(EngineCore pid=1870) INFO 11-03 07:42:20 [core.py:1432] [shutdown] EngineCore: start mode=abort timeout=0s
+(EngineCore pid=1870) INFO 11-03 07:42:20 [core.py:1463] [shutdown] EngineCore: request processing complete; starting resource teardown
+(EngineCore pid=1870) INFO 11-03 07:42:20 [core.py:1326] [shutdown] EngineCore: exiting busy loop
+
+==========================================================================================================
+Cells run after the KV-cache benchmark:
+
+!python -c "import json;d=json.load(open('results/Tesla_T4/kv_cache.json'));print(d.get('vllm_kv'),d.get('vllm_longest_context_batch8'),d.get('vllm_verify_batch8'))"
+{'num_gpu_blocks': 64717, 'block_size': 16, 'kv_tokens': 1035472, 'kv_gb': 12.723879936} 32768 {'context': 32768, 'completed': 8, 'wall_s': 573.4521600030002}
+
+# Part B merge check (after removing the duplicated amp_bf16_emulated key)
+['baseline', 'amp', 'ckpt', 'optim8', 'accum', 'combo']
+
+# Wrote 5 worst-class diagnoses into results/Tesla_T4/hw4a_train.json, rebuilt report, wrote final METRICS.md, zipped
+wrote REPORT_TABLES.md, METRICS.md ['plots/partA_throughput.png']
+# METRICS.md: HW4.5 summary
+_HW4.5 summary only. This is NOT an HW5 baseline._
+0 TODOs left (should be 0)
+-> /kaggle/working/hw45_submission.zip

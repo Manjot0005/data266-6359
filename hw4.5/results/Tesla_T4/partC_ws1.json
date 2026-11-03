@@ -1,0 +1,138 @@
+{
+  "world_size": 1,
+  "gpus": [
+    "Tesla T4"
+  ],
+  "homogeneous": true,
+  "nodes": 1,
+  "grad_bytes_fp32": 437938188,
+  "row_range": {
+    "first_row": 0,
+    "last_row": 4999,
+    "n_rows": 5000,
+    "n_after_dropna": 5000,
+    "dataset_rows": 45615,
+    "label_counts": {
+      "0": 769,
+      "1": 2294,
+      "2": 1937
+    },
+    "split_sizes": {
+      "train": 3500,
+      "val": 750,
+      "test": 750
+    }
+  },
+  "cfg": {
+    "csv": "",
+    "text_col": "text",
+    "label_col": "label",
+    "csv_header": true,
+    "encoding": "latin-1",
+    "slice": 0,
+    "n_rows": 5000,
+    "seed": 42,
+    "max_len": 128,
+    "model": "bert-base-uncased",
+    "epochs": 4,
+    "batch_size": 32,
+    "lr": 2e-05,
+    "weight_decay": 0.01,
+    "warmup_frac": 0.1,
+    "amp": "none",
+    "grad_ckpt": false,
+    "accum": 1,
+    "optim": "adamw",
+    "max_opt_steps": 0,
+    "tag": "baseline",
+    "out": "results",
+    "save_model": ""
+  },
+  "nvidia_smi_topo": "\t\u001b[4mGPU0\tGPU1\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \tPHB\t0-3\t0\t\tN/A\nGPU1\tPHB\t X \t0-3\t0\t\tN/A\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n",
+  "nccl_env": {
+    "NCCL_VERSION": "2.28.3-1"
+  },
+  "rows": [
+    {
+      "per_gpu_batch": 8,
+      "global_batch": 8,
+      "ok": true,
+      "step_time_ms": 184.81524288654327,
+      "step_time_nosync_ms": 186.96214258670807,
+      "comm_overhead_ms": -2.146899700164795,
+      "comm_fraction": -0.011616464457332457,
+      "compute_ms_per_rank": [
+        149.7795432806015
+      ],
+      "slowest_minus_fastest_compute_ms": 0.0,
+      "throughput_samples_per_s": 43.28647288530817,
+      "grad_allreduce_effective_GBps": null,
+      "dominant": "computation"
+    },
+    {
+      "per_gpu_batch": 16,
+      "global_batch": 16,
+      "ok": true,
+      "step_time_ms": 338.8306200504303,
+      "step_time_nosync_ms": 345.6087112426758,
+      "comm_overhead_ms": -6.778091192245483,
+      "comm_fraction": -0.020004364396690764,
+      "compute_ms_per_rank": [
+        308.2658350467682
+      ],
+      "slowest_minus_fastest_compute_ms": 0.0,
+      "throughput_samples_per_s": 47.221234012494556,
+      "grad_allreduce_effective_GBps": null,
+      "dominant": "computation"
+    },
+    {
+      "per_gpu_batch": 32,
+      "global_batch": 32,
+      "ok": true,
+      "step_time_ms": 662.5721454620361,
+      "step_time_nosync_ms": 662.5745296478271,
+      "comm_overhead_ms": -0.002384185791015625,
+      "comm_fraction": -3.5983791460974317e-06,
+      "compute_ms_per_rank": [
+        624.9695420265198
+      ],
+      "slowest_minus_fastest_compute_ms": 0.0,
+      "throughput_samples_per_s": 48.29662734717774,
+      "grad_allreduce_effective_GBps": null,
+      "dominant": "computation"
+    },
+    {
+      "per_gpu_batch": 64,
+      "global_batch": 64,
+      "ok": true,
+      "step_time_ms": 1251.3647079467773,
+      "step_time_nosync_ms": 1274.9676704406738,
+      "comm_overhead_ms": -23.602962493896484,
+      "comm_fraction": -0.01886177734117491,
+      "compute_ms_per_rank": [
+        1237.3946905136108
+      ],
+      "slowest_minus_fastest_compute_ms": 0.0,
+      "throughput_samples_per_s": 51.144162523977805,
+      "grad_allreduce_effective_GBps": null,
+      "dominant": "computation"
+    },
+    {
+      "per_gpu_batch": 128,
+      "global_batch": 128,
+      "ok": true,
+      "step_time_ms": 2507.9150199890137,
+      "step_time_nosync_ms": 2529.25181388855,
+      "comm_overhead_ms": -21.336793899536133,
+      "comm_fraction": -0.008507781854438434,
+      "compute_ms_per_rank": [
+        2491.6908740997314
+      ],
+      "slowest_minus_fastest_compute_ms": 0.0,
+      "throughput_samples_per_s": 51.03841197958961,
+      "grad_allreduce_effective_GBps": null,
+      "dominant": "computation"
+    }
+  ],
+  "allreduce_benchmark": null
+}

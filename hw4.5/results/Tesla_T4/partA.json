@@ -1,0 +1,100 @@
+{
+  "gpu": "Tesla T4",
+  "vram_gb": 15.636037632,
+  "row_range": {
+    "first_row": 0,
+    "last_row": 4999,
+    "n_rows": 5000,
+    "n_after_dropna": 5000,
+    "dataset_rows": 45615,
+    "label_counts": {
+      "0": 769,
+      "1": 2294,
+      "2": 1937
+    },
+    "split_sizes": {
+      "train": 3500,
+      "val": 750,
+      "test": 750
+    }
+  },
+  "cfg": {
+    "csv": "",
+    "text_col": "text",
+    "label_col": "label",
+    "csv_header": true,
+    "encoding": "latin-1",
+    "slice": 0,
+    "n_rows": 5000,
+    "seed": 42,
+    "max_len": 128,
+    "model": "bert-base-uncased",
+    "epochs": 4,
+    "batch_size": 32,
+    "lr": 2e-05,
+    "weight_decay": 0.01,
+    "warmup_frac": 0.1,
+    "amp": "none",
+    "grad_ckpt": false,
+    "accum": 1,
+    "optim": "adamw",
+    "max_opt_steps": 0,
+    "tag": "baseline",
+    "out": "results",
+    "save_model": ""
+  },
+  "rows": [
+    {
+      "batch_size": 8,
+      "ok": true,
+      "samples_per_s": 39.9980487451894,
+      "peak_mem_alloc_gb": 2.247845888,
+      "peak_mem_reserved_gb": 2.430599168,
+      "est_epoch_time_s": 87.50426857812528,
+      "measured_epoch_time_s": 90.80948712200006
+    },
+    {
+      "batch_size": 16,
+      "ok": true,
+      "samples_per_s": 44.75673348313432,
+      "peak_mem_alloc_gb": 2.661423104,
+      "peak_mem_reserved_gb": 3.032481792,
+      "est_epoch_time_s": 78.2005237562501,
+      "measured_epoch_time_s": 79.71017068900028
+    },
+    {
+      "batch_size": 32,
+      "ok": true,
+      "samples_per_s": 47.29103138142667,
+      "peak_mem_alloc_gb": 4.00940032,
+      "peak_mem_reserved_gb": 4.248829952,
+      "est_epoch_time_s": 74.00980477187495,
+      "measured_epoch_time_s": 72.73481369199999
+    },
+    {
+      "batch_size": 64,
+      "ok": true,
+      "samples_per_s": 48.33445432890634,
+      "peak_mem_alloc_gb": 6.5573376,
+      "peak_mem_reserved_gb": 6.70040064,
+      "est_epoch_time_s": 72.41211364843797,
+      "measured_epoch_time_s": 70.89572130799979
+    },
+    {
+      "batch_size": 128,
+      "ok": true,
+      "samples_per_s": 50.382560740059446,
+      "peak_mem_alloc_gb": 11.76076544,
+      "peak_mem_reserved_gb": 12.108955648,
+      "est_epoch_time_s": 69.46848172441405,
+      "measured_epoch_time_s": 69.98400637899977
+    },
+    {
+      "batch_size": 256,
+      "ok": false,
+      "error": "OOM"
+    }
+  ],
+  "max_batch": 128,
+  "first_oom_batch": 256
+}

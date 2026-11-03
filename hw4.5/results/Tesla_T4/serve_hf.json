@@ -1,0 +1,17 @@
+{
+  "HF pipeline, batch 1": {
+    "tokens_per_s": 30.66377661073605,
+    "p50_ms": 4172.274518499762,
+    "p95_ms": 4251.183006300107,
+    "mean_ms": 4173.586062150071,
+    "requests": 20,
+    "gen_tokens": 2560,
+    "wall_s": 83.48612868199962
+  },
+  "_meta": {
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "dtype": "torch.float16",
+    "gpu": "Tesla_T4",
+    "new_tokens": 128
+  }
+}

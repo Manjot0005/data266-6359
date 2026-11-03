@@ -1,0 +1,6 @@
+index, name, uuid, memory.total [MiB], driver_version
+0, Tesla T4, GPU-704b38e3-6ed7-ab18-d7cb-f2c36d25e4a3, 15360 MiB, 580.178.04
+1, Tesla T4, GPU-1293d877-9ea7-49f4-40f0-0ae5ef525783, 15360 MiB, 580.178.04
+GPU 0: Tesla T4 (UUID: GPU-704b38e3-6ed7-ab18-d7cb-f2c36d25e4a3)
+GPU 1: Tesla T4 (UUID: GPU-1293d877-9ea7-49f4-40f0-0ae5ef525783)
+Tue Nov  3 07:47:00 AM UTC 2026

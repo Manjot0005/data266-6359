@@ -1,0 +1,149 @@
+{
+  "world_size": 2,
+  "gpus": [
+    "Tesla T4",
+    "Tesla T4"
+  ],
+  "homogeneous": true,
+  "nodes": 1,
+  "grad_bytes_fp32": 437938188,
+  "row_range": {
+    "first_row": 0,
+    "last_row": 4999,
+    "n_rows": 5000,
+    "n_after_dropna": 5000,
+    "dataset_rows": 45615,
+    "label_counts": {
+      "0": 769,
+      "1": 2294,
+      "2": 1937
+    },
+    "split_sizes": {
+      "train": 3500,
+      "val": 750,
+      "test": 750
+    }
+  },
+  "cfg": {
+    "csv": "",
+    "text_col": "text",
+    "label_col": "label",
+    "csv_header": true,
+    "encoding": "latin-1",
+    "slice": 0,
+    "n_rows": 5000,
+    "seed": 42,
+    "max_len": 128,
+    "model": "bert-base-uncased",
+    "epochs": 4,
+    "batch_size": 32,
+    "lr": 2e-05,
+    "weight_decay": 0.01,
+    "warmup_frac": 0.1,
+    "amp": "none",
+    "grad_ckpt": false,
+    "accum": 1,
+    "optim": "adamw",
+    "max_opt_steps": 0,
+    "tag": "baseline",
+    "out": "results",
+    "save_model": ""
+  },
+  "nvidia_smi_topo": "\t\u001b[4mGPU0\tGPU1\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \tPHB\t0-3\t0\t\tN/A\nGPU1\tPHB\t X \t0-3\t0\t\tN/A\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n",
+  "nccl_env": {
+    "NCCL_VERSION": "2.28.3-1"
+  },
+  "rows": [
+    {
+      "per_gpu_batch": 8,
+      "global_batch": 16,
+      "ok": true,
+      "step_time_ms": 220.9644913673401,
+      "step_time_nosync_ms": 198.20140302181244,
+      "comm_overhead_ms": 22.76308834552765,
+      "comm_fraction": 0.10301695174943468,
+      "compute_ms_per_rank": [
+        160.98977625370026,
+        130.33384084701538
+      ],
+      "slowest_minus_fastest_compute_ms": 30.655935406684875,
+      "throughput_samples_per_s": 72.40982431607515,
+      "grad_allreduce_effective_GBps": 19.23896183823595,
+      "dominant": "computation"
+    },
+    {
+      "per_gpu_batch": 16,
+      "global_batch": 32,
+      "ok": true,
+      "step_time_ms": 388.84395360946655,
+      "step_time_nosync_ms": 368.84963512420654,
+      "comm_overhead_ms": 19.99431848526001,
+      "comm_fraction": 0.05141990327909587,
+      "compute_ms_per_rank": [
+        331.4895033836365,
+        265.8567428588867
+      ],
+      "slowest_minus_fastest_compute_ms": 65.63276052474976,
+      "throughput_samples_per_s": 82.29522332277034,
+      "grad_allreduce_effective_GBps": 21.903131548237162,
+      "dominant": "computation"
+    },
+    {
+      "per_gpu_batch": 32,
+      "global_batch": 64,
+      "ok": true,
+      "step_time_ms": 674.6109127998352,
+      "step_time_nosync_ms": 637.9819512367249,
+      "comm_overhead_ms": 36.62896156311035,
+      "comm_fraction": 0.05429642608520711,
+      "compute_ms_per_rank": [
+        600.5252599716187,
+        545.167088508606
+      ],
+      "slowest_minus_fastest_compute_ms": 55.358171463012695,
+      "throughput_samples_per_s": 94.86950001206034,
+      "grad_allreduce_effective_GBps": 11.956063434816425,
+      "dominant": "computation"
+    },
+    {
+      "per_gpu_batch": 64,
+      "global_batch": 128,
+      "ok": true,
+      "step_time_ms": 1294.9656248092651,
+      "step_time_nosync_ms": 1262.703776359558,
+      "comm_overhead_ms": 32.26184844970703,
+      "comm_fraction": 0.02491328559741411,
+      "compute_ms_per_rank": [
+        1225.128412246704,
+        1206.0558795928955
+      ],
+      "slowest_minus_fastest_compute_ms": 19.072532653808594,
+      "throughput_samples_per_s": 98.84432261964719,
+      "grad_allreduce_effective_GBps": 13.574491513798456,
+      "dominant": "computation"
+    },
+    {
+      "per_gpu_batch": 128,
+      "global_batch": 256,
+      "ok": true,
+      "step_time_ms": 2554.018497467041,
+      "step_time_nosync_ms": 2527.9955863952637,
+      "comm_overhead_ms": 26.022911071777344,
+      "comm_fraction": 0.010189006499986464,
+      "compute_ms_per_rank": [
+        2490.3740882873535,
+        2393.038034439087
+      ],
+      "slowest_minus_fastest_compute_ms": 97.3360538482666,
+      "throughput_samples_per_s": 100.23419965591053,
+      "grad_allreduce_effective_GBps": 16.828946876545167,
+      "dominant": "computation"
+    }
+  ],
+  "allreduce_benchmark": {
+    "bytes": 437938188,
+    "time_ms": 56.290378399990004,
+    "algbw_GBps": 7.779983017489855,
+    "busbw_GBps": 7.779983017489855
+  }
+}
